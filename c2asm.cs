@@ -1,35 +1,119 @@
-﻿using System;
+//mcs hello.cs -r:System.Drawing.dll -r:System.Windows.Forms.dll
+
+using System;
+using System.ComponentModel;
+using System.Drawing;
+using System.Windows.Forms;
+using System.Globalization;
 using System.Diagnostics;
 using System.IO;
+using System.Collections.Generic;
+using System.Runtime.Serialization.Formatters.Binary;
 
 
-namespace c2asm
-
+namespace FormWithButton
 {
-	class MainClass
-	{
-		public static void Main (string[] args)
-		{
-			String a;
-			String b;
-			Console.WriteLine ("file c to convert");
-			Console.Beep ();
-			a=Console.ReadLine ();
-			Console.WriteLine ("file asm file to output");
-			Console.Beep ();
-			b=Console.ReadLine ();
+
+   public class Form1 : Form
+    {
+		public TextBox txt2 ;
+		public TextBox txt3 ;
+		public Label lbl ;
+		public Label lbl1 ;
+		public Label lbl2 ;
+		public Label lbl3 ;
+		public TextBox txt ;
+        public Button button1;
+
+        public Form1()
+        {
+			txt2 = new TextBox();
+			txt3 = new TextBox();			
+			lbl = new Label();
+			// lbl1 = new Label();
+			lbl2 = new Label();
+			lbl3 = new Label();
+			txt = new TextBox();
+			button1 = new Button();
+
 			
+			lbl.Location = new Point(10, 10);
+			lbl.Text = "input file c file:";
+			lbl.Size = new Size(140, 20);
+			this.Controls.Add(lbl);
+			Label lbl1 = new Label();
+			lbl1.Location = new Point(10,50);
+			lbl1.Text = "outpu file";
+			lbl1.Size = new Size(140, 20);
+			this.Controls.Add(lbl1);
+			lbl2.Location = new Point(10,100);
+			lbl2.Text = "___________________________:";
+			lbl2.Size = new Size(140, 20);
+			this.Controls.Add(lbl2);
+
+			lbl3.Location = new Point(10,150);
+			lbl3.Text = " ";
+			lbl3.Size = new Size(280, 100);
+			this.Controls.Add(lbl3);
+			
+			
+			txt.Text = "hello.c";
+			txt.Location = new Point(10,30);;
+			txt.Size = new Size(140, 20);
+			this.Controls.Add(txt);
+
+			txt2.Text = "hello.asm";
+			txt2.Location = new Point(10,70);;
+			txt2.Size = new Size(140, 20);
+			this.Controls.Add(txt2);
+
+
+            
+			button1.Size = new Size(180, 20);
+            button1.Location = new Point(10, 250);
+            button1.Text = "C to asm 16 bits";
+            this.Controls.Add(button1);
+            button1.Click += new EventHandler(button1_Click);
+        }
+        private void button1_Click(object sender, EventArgs e)
+        {
+                            
+        String a;
+        String b;
+        String c;
+		
+        a = txt.Text ;
+             
+        b = txt2.Text ;
+        c = txt3.Text ;
+		lbl3.Text ="on progress " +a ;
+		try{
+						
 			ProcessStartInfo psi = new ProcessStartInfo();
-			psi.FileName = "/usr/bin/x86_64-w64-mingw32-g++";
+			psi.FileName = "bash";
 			psi.UseShellExecute = false;
-			psi.Arguments = "-S -m16 -masm=intel -o " + b + ".asm " + a;
+			psi.Arguments = "-c \"/usr/bin/x86_64-w64-mingw32-g++ -S -m16 -masm=intel -o " + b + ".txt " + a+ "  2> error.txt\"";
 			psi.RedirectStandardOutput = true;
+			psi.RedirectStandardError = true;
 			Process p = Process.Start(psi);
-			Console.WriteLine(p.StandardOutput.ReadToEnd());
+			lbl3.Text=p.StandardOutput.ReadToEnd();
 			p.WaitForExit();
 			p.Close();
 
-			String[] lines = File.ReadAllLines( b + ".asm");
+
+			psi.FileName = "mousepad";
+			psi.UseShellExecute = false;
+			psi.Arguments = "error.txt";
+			psi.RedirectStandardOutput = true;
+			psi.RedirectStandardError = true;
+			p = Process.Start(psi);
+			p.WaitForExit();
+			p.Close();
+
+
+
+
+			String[] lines = File.ReadAllLines( b + ".txt");
 			using (StreamWriter file =  new StreamWriter(b))
 			{
 				file.WriteLine("section .text");
@@ -37,18 +121,15 @@ namespace c2asm
 				file.WriteLine(" ");
 				file.WriteLine("main:");
 				file.WriteLine("	mov	ax,cs");
-				file.WriteLine("	mov	bx,0x14");
-				file.WriteLine("	add	ax,bx");
-				//file.WriteLine("	mov	ds,ax");
-				//file.WriteLine("	mov	es,ax");
 				file.WriteLine("	mov	di,0");
+				file.WriteLine("	mov	si,0");
 				file.WriteLine("	jmp	_main");
 				file.WriteLine(" ");
 				file.WriteLine("_puts:");
 				file.WriteLine("	push	ebp");
 				file.WriteLine("	mov	ebp, esp");
 				file.WriteLine("	sub	esp, 16");
-				file.WriteLine("	mov	eax, DWORD [ebp+6]");
+				file.WriteLine("	mov	eax, DWORD [bp+8]");
 				file.WriteLine("	mov	edx, eax");
 				file.WriteLine("	mov	ah,9");
 				file.WriteLine("	int	0x21");
@@ -57,15 +138,8 @@ namespace c2asm
 				file.WriteLine("	ret");
 				file.WriteLine(" ");
 				file.WriteLine("_exit:");
-				file.WriteLine("	push	ebp");
-				file.WriteLine("	mov	ebp, esp");
-				file.WriteLine("	sub	esp, 16");
-				file.WriteLine("	mov	eax, DWORD [ebp+6]");
-				file.WriteLine("	mov	edx, eax");
 				file.WriteLine("	mov	ax,0");
 				file.WriteLine("	int	0x21");
-				file.WriteLine("	nop");
-				file.WriteLine("	leave");
 				file.WriteLine("	ret");
 
 				
@@ -99,6 +173,28 @@ namespace c2asm
 				s=s.Replace("\\12","\",13,10,\"");
 				s=s.Replace("\\13","\",13,10,\"");
 				s=s.Replace("\\10","\",13,10,\"");
+
+				if (s.Contains("[esp"))
+				{
+
+					s="	push sp\n	pop si\n	 	\n"+s;
+					s=s.Replace("[esp","[si");
+
+
+				}
+
+
+				if (s.Contains("[ebp"))
+				{
+
+					s="	push bp\n	pop si\n	 	\n"+s;
+					s=s.Replace("[esp","[si");
+
+
+				}
+
+
+
 				
 				if (s.Contains(".space"))
 				{
@@ -106,21 +202,10 @@ namespace c2asm
 					s=s+"	db \" \"";
 				}
 				
-				if (s.Contains("[ebp+"))
+				if (s.Contains("call"))
 				{
-					int iii;
-					int iiii;
-					int iiiii;
-					String ssss;
-
-					iii=s.IndexOf("[ebp+",0);
-					iiii=s.IndexOf("]",iii);
-					iiiii=iiii-iii;
-					sss=s.Substring(iii,iiiii);
-					ssss=sss.Substring(5,iiiii-5);
-					Int32.TryParse(ssss,out iii);
-					iii=iii-2;
-					s=s.Replace(sss,"[ebp+" + (iii.ToString()));
+					
+					s="	push word 0 	;ajust 32 address  address into 16 bits\n"+s+"\n	add sp,2 	;ajust 32 address into 16 bits";
 
 
 				}
@@ -237,22 +322,45 @@ namespace c2asm
 			String ss;
 			ss="section .data";
 			
-			using (StreamWriter file =  new StreamWriter(b,true))
+			using (StreamWriter file =  new StreamWriter(b+".asm",true))
 			{
 				file.WriteLine(ss);
 			}
 
-			psi.FileName = "mousepad" ;
+			
+			
+			
+			psi.FileName = "mousepad";
 			psi.UseShellExecute = false;
-			psi.Arguments = " "+b +" ";
+			psi.Arguments = b;
 			psi.RedirectStandardOutput = true;
+			psi.RedirectStandardError = true;
 			p = Process.Start(psi);
-			Console.WriteLine(p.StandardOutput.ReadToEnd());
 			p.WaitForExit();
 			p.Close();
+
+
+		
+
 			
 			
 			
-		}
-	}
+			
+			
+			
+			
+			lbl3.Text ="prosses is over.";
+           }catch(IOException ee ){
+			   lbl3.Text =lbl3.Text + "\nERROR same data is not correct";
+			   }
+          
+        }
+        [STAThread]
+        static void Main()
+        {
+            Application.EnableVisualStyles();
+            Application.Run(new Form1());
+        }
+    }
+
 }
