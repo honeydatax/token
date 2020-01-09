@@ -1,2 +1,2 @@
-# c2asm
-c into asm converter simples code
+# token
+string entry and command lines token strings
